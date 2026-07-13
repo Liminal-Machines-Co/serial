@@ -1,6 +1,6 @@
 {
 	"name": "@liminal-machines-co/serial",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"description": "Small, fast serialport for Node — Zig-backed native core with prebuilt binaries for all major platforms.",
 	"type": "commonjs",
 	"main": "dist/index.js",
