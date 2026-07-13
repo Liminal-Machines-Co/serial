@@ -21,8 +21,8 @@ async function main() {
 	await port.open();
 
 	// Print the first line the device sends back, then close.
-	lines.once("data", async (line: Buffer) => {
-		console.log("reply:", line.toString());
+	lines.once("data", async (line) => {
+		console.log("reply:", line);
 		await port.close();
 	});
 

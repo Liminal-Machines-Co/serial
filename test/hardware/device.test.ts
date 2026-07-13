@@ -14,6 +14,21 @@ const PORT = process.env.SERIAL_TEST_PORT;
 const BAUD = Number(process.env.SERIAL_TEST_BAUD ?? 9600);
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+if (!PORT) {
+	console.log(`
+--------
+
+!IMPORTANT!
+Port for test device was not provided. Use hardware tests like this:
+
+--------
+
+SERIAL_TEST_PORT=yourport bun run test:hardware
+
+--------
+    `);
+}
+
 describe.skipIf(!PORT)("hardware: arduino test-device", () => {
 	let port: SerialPort;
 	// Raw receive buffer accumulated straight off the port, so we can frame both
@@ -67,7 +82,6 @@ describe.skipIf(!PORT)("hardware: arduino test-device", () => {
 		// once it is up. Wait for it (or time out) then clear the buffer.
 		const deadline = Date.now() + 5000;
 		while (Date.now() < deadline) {
-			console.log(rx);
 			if (rx.includes("ready")) break;
 			await sleep(50);
 		}

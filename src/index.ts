@@ -11,6 +11,7 @@ export type { ReadlineParserOptions } from "./parsers/ReadlineParser.js";
 export { ReadlineParser } from "./parsers/ReadlineParser.js";
 export type { RegexParserOptions } from "./parsers/RegexParser.js";
 export { RegexParser } from "./parsers/RegexParser.js";
+export { TypedDataTransform } from "./parsers/TypedDataTransform.js";
 export { SerialPort } from "./SerialPort.js";
 
 export type {

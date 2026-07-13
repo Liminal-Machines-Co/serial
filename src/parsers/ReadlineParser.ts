@@ -1,22 +1,32 @@
 import type { TransformOptions } from "node:stream";
 import { BufferedTransform } from "./BufferedTransform.js";
 
-export interface ReadlineParserOptions extends TransformOptions {
+export interface ReadlineParserOptions<Raw extends boolean = false>
+	extends TransformOptions {
 	delimiter?: string | Buffer;
 	encoding?: BufferEncoding;
 	includeDelimiter?: boolean;
+	raw?: Raw;
 }
 
-export class ReadlineParser extends BufferedTransform {
+export class ReadlineParser<
+	Raw extends boolean = false,
+> extends BufferedTransform<Raw extends true ? Buffer : string> {
+	protected _raw: boolean;
+	protected _encoding: BufferEncoding;
 	private _delimiter: Buffer;
 	private _includeDelimiter: boolean;
 
-	constructor(options: ReadlineParserOptions = {}) {
-		super(options);
+	constructor(options: ReadlineParserOptions<Raw> = {}) {
+		const raw = options.raw ?? false;
+		const encoding = options.encoding ?? "utf8";
+		super(raw ? options : { ...options, encoding });
+		this._raw = raw;
+		this._encoding = encoding;
 		const delimiter = options.delimiter ?? "\n";
 		this._delimiter =
 			typeof delimiter === "string"
-				? Buffer.from(delimiter, (options.encoding as BufferEncoding) ?? "utf8")
+				? Buffer.from(delimiter, this._encoding)
 				: delimiter;
 		this._includeDelimiter = options.includeDelimiter ?? false;
 		if (this._delimiter.length === 0) {
@@ -35,7 +45,7 @@ export class ReadlineParser extends BufferedTransform {
 			const position = this._buffer.indexOf(delimiter, searchIndex);
 			if (position === -1) break;
 			const end = position + (includeDelim ? delimLen : 0);
-			this.push(this._buffer.subarray(cursor, end));
+			this._push(this._buffer.subarray(cursor, end));
 			cursor = position + delimLen;
 			searchIndex = cursor;
 		}

@@ -1,15 +1,12 @@
-import {
-	Transform,
-	type TransformCallback,
-	type TransformOptions,
-} from "node:stream";
+import type { TransformCallback, TransformOptions } from "node:stream";
+import { TypedDataTransform } from "./TypedDataTransform.js";
 
 export interface RegexParserOptions extends TransformOptions {
 	regex: RegExp | string | Buffer;
 	encoding?: BufferEncoding;
 }
 
-export class RegexParser extends Transform {
+export class RegexParser extends TypedDataTransform<string> {
 	private _regex: RegExp;
 	private _data: string;
 

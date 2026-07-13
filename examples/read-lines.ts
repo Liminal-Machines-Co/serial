@@ -20,7 +20,7 @@ async function main() {
 	// line, re-joining lines split across reads. The delimiter (default "\n") is
 	// stripped from each emitted line.
 	const lines = port.pipe(new ReadlineParser());
-	lines.on("data", (line: Buffer) => console.log("←", line.toString()));
+	lines.on("data", (line) => console.log("←", line));
 
 	port.on("error", (err: Error) => console.error("serial error:", err.message));
 

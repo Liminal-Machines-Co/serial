@@ -75,7 +75,7 @@ test("composes with ReadlineParser into framed lines", async () => {
 
 	const parser = port.pipe(new ReadlineParser());
 	const lines: string[] = [];
-	parser.on("data", (line: Buffer) => lines.push(line.toString()));
+	parser.on("data", (line) => lines.push(line));
 
 	await port.write("GO");
 	await new Promise((r) => setTimeout(r, 20));
