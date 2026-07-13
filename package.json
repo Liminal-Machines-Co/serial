@@ -42,7 +42,8 @@
 		"test": "bun test src",
 		"test:integration": "bun test test/integration",
 		"test:hardware": "bun test test/hardware",
-		"test:all": "bun test src test/integration"
+		"test:all": "bun test src test/integration",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"node-gyp-build": "^4.8.4"
@@ -51,6 +52,7 @@
 		"@biomejs/biome": "2.5.3",
 		"@types/bun": "^1.1.14",
 		"@types/node": "^22.10.0",
+		"husky": "^9.1.7",
 		"typescript": "^5.7.0"
 	},
 	"keywords": [
