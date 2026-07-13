@@ -4,7 +4,7 @@ Guidance for working in this repository.
 
 ## What this is
 
-`tiny-serial` — a small serial-port library for Node.js with a **Zig**-backed
+`@liminal-machines-co/serial` — a small serial-port library for Node.js with a **Zig**-backed
 native core. The design goal is effortless multi-platform distribution: Zig
 cross-compiles every target from one machine, and Node-API symbols resolve at
 load time, so prebuilt binaries for all platforms are built in a single CI job
@@ -42,7 +42,7 @@ src/
   options.ts            validateOptions
   types.ts              interfaces (ISerialPort, INativeSerialPort, NativeOpenOptions, …)
   parsers/              BufferedTransform + Readline/ByteLength/InterByteTimeout/Regex
-  cli.ts                `tiny-serial list` CLI (bin)
+  cli.ts                `liminal-serial list` CLI (bin)
   index.ts              public barrel
 index.js / index.d.ts   root native loader (node-gyp-build) + its types
 build.zig / build.zig.zon  native build + deps
@@ -71,8 +71,8 @@ arduino/test-device/    firmware fixture for hardware tests
    libuv dependency (nothing is linked/shipped).
 
 4. **Config seam carries full line settings.** `NativeSerialPort.open(path,
-   config, cb)` where `config: NativeOpenOptions` = `{ baudRate, dataBits?,
-   stopBits?, parity?, rtscts?, xon?, xoff? }`. `baudRate === 0` is a sentinel
+config, cb)` where `config: NativeOpenOptions` = `{ baudRate, dataBits?,
+stopBits?, parity?, rtscts?, xon?, xoff? }`. `baudRate === 0` is a sentinel
    that skips `configureSerialPort` (for PTYs). Handshake maps to the serial
    lib's single field: `rtscts` → hardware, else `xon||xoff` → software, else
    none. Do not narrow this back to baud-only — the earlier bug was the

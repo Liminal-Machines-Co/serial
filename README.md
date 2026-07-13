@@ -1,4 +1,4 @@
-# tiny-serial
+# @liminal-machines-co/serial
 
 A small, fast serial port library for Node.js with a **Zig**-backed native core.
 Zig cross-compiles every target from a single machine, and Node-API symbols
@@ -8,7 +8,7 @@ job and bundled into the package. Just install and go.
 ## Install
 
 ```sh
-npm install tiny-serial
+npm install @liminal-machines-co/serial
 ```
 
 `node-gyp-build` picks the right prebuilt binary from
@@ -17,7 +17,7 @@ npm install tiny-serial
 ## Usage
 
 ```ts
-import { SerialPort, ReadlineParser } from "tiny-serial";
+import { SerialPort, ReadlineParser } from "@liminal-machines-co/serial";
 
 const port = new SerialPort({ path: "/dev/ttyUSB0", baudRate: 115200 });
 await port.open();
@@ -36,8 +36,8 @@ applies. See [`examples/`](examples/) for runnable scripts.
 List ports without writing any code:
 
 ```sh
-npx tiny-serial list          # table of available ports
-npx tiny-serial list --json   # machine-readable JSON
+npx liminal-serial list          # table of available ports
+npx liminal-serial list --json   # machine-readable JSON
 ```
 
 ```
@@ -61,7 +61,7 @@ Transform streams you compose onto a port with `.pipe()`:
 you can test your serial logic with no device attached:
 
 ```ts
-import { MockSerialPort } from "tiny-serial";
+import { MockSerialPort } from "@liminal-machines-co/serial";
 
 const port = new MockSerialPort({ path: "/dev/mock", baudRate: 9600 });
 port.mockReply("PING", "PONG\n");

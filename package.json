@@ -1,13 +1,14 @@
 {
-	"name": "tiny-serial",
+	"name": "@liminal-machines-co/serial",
 	"version": "0.1.0",
-	"description": "Small, fast serialport for Node — Zig-backed native core with prebuilt binaries for every platform.",
+	"description": "Small, fast serialport for Node — Zig-backed native core with prebuilt binaries for all major platforms.",
 	"type": "commonjs",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"bin": {
-		"tiny-serial": "dist/cli.js"
+		"liminal-serial": "dist/cli.js"
 	},
+	"private": false,
 	"files": [
 		"dist",
 		"prebuilds",
@@ -19,12 +20,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/max-hans/tiny-serial.git"
+		"url": "git+https://github.com/Liminal-Machines-Co/serial.git"
 	},
 	"bugs": {
-		"url": "https://github.com/max-hans/tiny-serial/issues"
+		"url": "https://github.com/Liminal-Machines-Co/serial/issues"
 	},
-	"homepage": "https://github.com/max-hans/tiny-serial#readme",
+	"homepage": "https://github.com/Liminal-Machines-Co/serial#readme",
 	"scripts": {
 		"format:dryrun": "bunx --bun @biomejs/biome format",
 		"format": "bunx --bun @biomejs/biome format --write",

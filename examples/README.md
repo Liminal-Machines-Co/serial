@@ -23,8 +23,8 @@ bun examples/read-lines.ts /dev/ttyUSB0
 npx tsx examples/list-ports.ts
 ```
 
-Find a port with `npx tiny-serial list`. The examples import from `../src`; in
-your own project you would instead `import ... from "tiny-serial"`.
+Find a port with `npx liminal-serial list`. The examples import from `../src`; in
+your own project you would instead `import ... from "@liminal-machines-co/serial"`.
 
 ---
 
@@ -33,13 +33,13 @@ your own project you would instead `import ... from "tiny-serial"`.
 ### Install
 
 ```sh
-npm install tiny-serial
+npm install @liminal-machines-co/serial
 ```
 
 ### List ports
 
 ```js
-import { SerialPort } from "tiny-serial";
+import { SerialPort } from "@liminal-machines-co/serial";
 
 const ports = await SerialPort.list(); // [{ path, portType }, ...]
 ```
@@ -84,7 +84,7 @@ Incoming bytes arrive in arbitrary chunks, so pipe the port through a
 delimiter stripped):
 
 ```js
-import { ReadlineParser } from "tiny-serial";
+import { ReadlineParser } from "@liminal-machines-co/serial";
 
 const lines = port.pipe(new ReadlineParser()); // default delimiter "\n"
 lines.on("data", (line) => console.log(line.toString()));
@@ -106,7 +106,7 @@ await port.close();
 device — handy for unit tests:
 
 ```js
-import { MockSerialPort } from "tiny-serial";
+import { MockSerialPort } from "@liminal-machines-co/serial";
 
 const port = new MockSerialPort({ path: "/dev/mock", baudRate: 9600 });
 port.mockReply("PING", "PONG\n"); // queue a canned response

@@ -27,7 +27,7 @@ test.skipIf(!native?.listPorts)(
 test("`--help` prints usage and exits 0", () => {
 	const res = run("--help");
 	expect(res.status).toBe(0);
-	expect(res.stdout).toContain("tiny-serial");
+	expect(res.stdout).toContain("liminal-serial");
 	expect(res.stdout).toContain("list");
 });
 

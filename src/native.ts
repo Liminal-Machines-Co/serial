@@ -15,8 +15,8 @@ async function loadNativeModule(): Promise<NativeModule> {
 		const msg = err instanceof Error ? err.message : String(err);
 		if (msg.includes("Cannot find native binding")) {
 			throw new Error(
-				`tiny-serial: No pre-built binary for ${process.platform}-${process.arch}. ` +
-					`See https://github.com/max-hans/tiny-serial/issues for help.`,
+				`@liminal-machines-co/serial: No pre-built binary for ${process.platform}-${process.arch}. ` +
+					`See https://github.com/Liminal-Machines-Co/serial/issues for help.`,
 				{ cause: err },
 			);
 		}

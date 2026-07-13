@@ -3,14 +3,14 @@
 //   bun examples/read-lines.ts /dev/ttyUSB0
 //   SERIAL_PORT=/dev/cu.usbmodem1101 bun examples/read-lines.ts
 //
-// In your own project:  import { SerialPort, ReadlineParser } from "tiny-serial";
+// In your own project:  import { SerialPort, ReadlineParser } from "@liminal-machines-co/serial";
 import { ReadlineParser, SerialPort } from "../src/index.js";
 
 async function main() {
 	const path = process.argv[2] ?? process.env.SERIAL_PORT;
 	if (!path) {
 		console.error("Usage: bun examples/read-lines.ts <port>");
-		console.error("Tip: `npx tiny-serial list` shows available ports.");
+		console.error("Tip: `npx liminal-serial list` shows available ports.");
 		process.exit(1);
 	}
 

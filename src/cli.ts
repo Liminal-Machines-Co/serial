@@ -2,12 +2,12 @@
 import { createRequire } from "node:module";
 import { SerialPort } from "./index.js";
 
-const HELP = `tiny-serial — list serial ports
+const HELP = `liminal-serial — list serial ports
 
 Usage:
-  tiny-serial list [--json]   List available serial ports (default command)
-  tiny-serial --help          Show this help
-  tiny-serial --version       Show the version
+  liminal-serial list [--json]   List available serial ports (default command)
+  liminal-serial --help          Show this help
+  liminal-serial --version       Show the version
 
 Options:
   --json   Output the port list as JSON
@@ -36,7 +36,7 @@ async function main(argv: string[]): Promise<number> {
 
 	const cmd = args.find((a) => !a.startsWith("-")) ?? "list";
 	if (cmd !== "list") {
-		process.stderr.write(`tiny-serial: unknown command '${cmd}'\n\n${HELP}`);
+		process.stderr.write(`liminal-serial: unknown command '${cmd}'\n\n${HELP}`);
 		return 1;
 	}
 
@@ -64,6 +64,6 @@ main(process.argv)
 	.then((code) => process.exit(code))
 	.catch((err: unknown) => {
 		const msg = err instanceof Error ? err.message : String(err);
-		process.stderr.write(`tiny-serial: ${msg}\n`);
+		process.stderr.write(`liminal-serial: ${msg}\n`);
 		process.exit(1);
 	});

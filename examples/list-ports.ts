@@ -3,7 +3,7 @@
 //   bun examples/list-ports.ts
 //   npx tsx examples/list-ports.ts
 //
-// In your own project the import is:  import { SerialPort } from "tiny-serial";
+// In your own project the import is:  import { SerialPort } from "@liminal-machines-co/serial";
 import { SerialPort } from "../src/index.js";
 
 async function main() {

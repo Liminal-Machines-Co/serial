@@ -86,7 +86,7 @@ describe.skipIf(!PORT)("hardware: arduino test-device", () => {
 
 	test("ID returns the firmware identifier", async () => {
 		await command("ID");
-		expect(await readLine()).toBe("tiny-serial-test v1.0");
+		expect(await readLine()).toBe("liminal-serial-test v1.0");
 	});
 
 	test("ECHO echoes its argument", async () => {

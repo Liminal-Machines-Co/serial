@@ -23,6 +23,6 @@ fn construct(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_va
 
 fn notImplemented(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
     _ = info;
-    napi.throwError(env, "tiny-serial: native serial IO is not yet implemented on Windows");
+    napi.throwError(env, "@liminal-machines-co/serial: native serial IO is not yet implemented on Windows");
     return napi.getUndefined(env);
 }

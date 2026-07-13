@@ -4,7 +4,7 @@
 //   bun examples/write-and-read.ts /dev/ttyUSB0 PING
 //   bun examples/write-and-read.ts /dev/cu.usbmodem1101 "ECHO hello"
 //
-// In your own project:  import { SerialPort, ReadlineParser } from "tiny-serial";
+// In your own project:  import { SerialPort, ReadlineParser } from "@liminal-machines-co/serial";
 import { ReadlineParser, SerialPort } from "../src/index.js";
 
 async function main() {
