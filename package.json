@@ -20,12 +20,12 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Liminal-Machines-Co/serial.git"
+		"url": "git+https://github.com/liminal-machines-co/serial.git"
 	},
 	"bugs": {
-		"url": "https://github.com/Liminal-Machines-Co/serial/issues"
+		"url": "https://github.com/liminal-machines-co/serial/issues"
 	},
-	"homepage": "https://github.com/Liminal-Machines-Co/serial#readme",
+	"homepage": "https://github.com/liminal-machines-co/serial#readme",
 	"scripts": {
 		"format:dryrun": "bunx --bun @biomejs/biome format",
 		"format": "bunx --bun @biomejs/biome format --write",
