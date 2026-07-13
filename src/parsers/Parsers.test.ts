@@ -61,11 +61,7 @@ test("ByteLengthParser emits fixed-size frames and buffers remainder", async () 
 	]);
 	assert.deepEqual(
 		out.map((b) => [...b]),
-		[
-			[1, 2],
-			[3, 4],
-			[5],
-		],
+		[[1, 2], [3, 4], [5]],
 	); // last [5] is the flushed remainder
 });
 

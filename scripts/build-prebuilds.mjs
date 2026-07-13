@@ -21,13 +21,7 @@ for (const target of selected) {
 	console.log(`\n▶ building ${target}`);
 	const res = spawnSync(
 		"zig",
-		[
-			"build",
-			"--prefix",
-			".",
-			"-Doptimize=ReleaseFast",
-			`-Dtarget=${target}`,
-		],
+		["build", "--prefix", ".", "-Doptimize=ReleaseFast", `-Dtarget=${target}`],
 		{ stdio: "inherit" },
 	);
 	if (res.status !== 0) {

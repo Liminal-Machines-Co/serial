@@ -1,48 +1,49 @@
 {
-  "name": "tiny-serial",
-  "version": "0.1.0",
-  "description": "Small, fast serialport for Node — Zig-backed native core with prebuilt binaries for every platform.",
-  "type": "commonjs",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "prebuilds",
-    "index.js",
-    "index.d.ts"
-  ],
-  "engines": {
-    "node": ">=18"
-  },
-  "scripts": {
-    "format": "bunx --bun @biomejs/biome format --write",
-    "lint:fix": "bunx --bun @biomejs/biome check --write",
-    "clean": "node --eval \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "prepack": "npm run clean && npm run build:ts",
-    "build": "npm run build:native && npm run build:ts",
-    "build:native": "zig build --prefix . -Doptimize=ReleaseFast",
-    "build:prebuilds": "node scripts/build-prebuilds.mjs",
-    "build:ts": "tsc",
-    "typecheck": "tsc --noEmit",
-    "pretest": "tsc -p tsconfig.test.json",
-    "test": "node --test dist/**/*.test.js",
-    "test:native": "node --test test/native-smoke.mjs"
-  },
-  "dependencies": {
-    "node-gyp-build": "^4.8.4"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.5.3",
-    "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
-  },
-  "keywords": [
-    "serialport",
-    "serial",
-    "uart",
-    "zig",
-    "native",
-    "prebuild"
-  ],
-  "license": "MIT"
+	"name": "tiny-serial",
+	"version": "0.1.0",
+	"description": "Small, fast serialport for Node — Zig-backed native core with prebuilt binaries for every platform.",
+	"type": "commonjs",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": [
+		"dist",
+		"prebuilds",
+		"index.js",
+		"index.d.ts"
+	],
+	"engines": {
+		"node": ">=18"
+	},
+	"scripts": {
+		"format": "bunx --bun @biomejs/biome format --write",
+		"lint": "bunx --bun @biomejs/biome check",
+		"lint:fix": "bunx --bun @biomejs/biome check --write",
+		"clean": "node --eval \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+		"prepack": "npm run clean && npm run build:ts",
+		"build": "npm run build:native && npm run build:ts",
+		"build:native": "zig build --prefix . -Doptimize=ReleaseFast",
+		"build:prebuilds": "node scripts/build-prebuilds.mjs",
+		"build:ts": "tsc",
+		"typecheck": "tsc --noEmit",
+		"pretest": "tsc -p tsconfig.test.json",
+		"test": "node --test dist/**/*.test.js",
+		"test:native": "node --test test/native-smoke.mjs"
+	},
+	"dependencies": {
+		"node-gyp-build": "^4.8.4"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.3",
+		"@types/node": "^22.10.0",
+		"typescript": "^5.7.0"
+	},
+	"keywords": [
+		"serialport",
+		"serial",
+		"uart",
+		"zig",
+		"native",
+		"prebuild"
+	],
+	"license": "MIT"
 }
