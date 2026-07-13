@@ -63,10 +63,15 @@ test.skipIf(unavailable || process.platform === "win32")(
 		const stty = spawnSync("stty", [flag, a, "-a"]).stdout.toString();
 
 		expect(stty).toMatch(/speed 9600/); // baudRate crossed the seam
-		expect(stty).toMatch(/cs7/); // dataBits: 7
-		expect(stty).toMatch(/(^|\s)parenb/); // parity enabled
-		expect(stty).toMatch(/-parodd/); // even parity
 		expect(stty).toMatch(/(^|\s)cstopb/); // 2 stop bits
+
+		// Linux PTY driver (pty_set_termios) hard-overrides CSIZE to CS8 and clears PARENB.
+		// We can only assert character size and parity on macOS/other platforms where PTYs retain these.
+		if (process.platform !== "linux") {
+			expect(stty).toMatch(/cs7/); // dataBits: 7
+			expect(stty).toMatch(/(^|\s)parenb/); // parity enabled
+			expect(stty).toMatch(/-parodd/); // even parity
+		}
 
 		port.close();
 		proc.kill();
