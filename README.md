@@ -1,10 +1,9 @@
 # tiny-serial
 
 A small, fast serial port library for Node.js with a **Zig**-backed native core.
-Because Zig cross-compiles every target from a single machine and Node-API
-symbols resolve at load time, prebuilt binaries for all platforms are built in
-one CI job and bundled into the published package — **no compiler, no
-node-gyp, no install scripts** on the consumer's machine.
+Zig cross-compiles every target from a single machine, and Node-API symbols
+resolve at load time — so prebuilt binaries for all platforms are built in one CI
+job and bundled into the package. Just install and go.
 
 ## Install
 
@@ -12,8 +11,8 @@ node-gyp, no install scripts** on the consumer's machine.
 npm install tiny-serial
 ```
 
-The correct prebuilt binary is selected at load time by `node-gyp-build` from
-`prebuilds/<platform>-<arch>/serial.node`.
+`node-gyp-build` picks the right prebuilt binary from
+`prebuilds/<platform>-<arch>/serial.node` at load time.
 
 ## Usage
 
@@ -29,9 +28,12 @@ await port.write("AT\r\n");
 const ports = await SerialPort.list(); // [{ path, portType }, ...]
 ```
 
+A `SerialPort` is a Node `Readable`, so everything you know about streams
+applies. See [`examples/`](examples/) for runnable scripts.
+
 ### CLI
 
-The package ships a small `tiny-serial` command for listing ports:
+List ports without writing any code:
 
 ```sh
 npx tiny-serial list          # table of available ports
@@ -46,7 +48,7 @@ PATH                             TYPE
 
 ### Parsers
 
-Transform streams you compose onto the port with `.pipe()`:
+Transform streams you compose onto a port with `.pipe()`:
 
 - `ReadlineParser` — split on a delimiter (default `\n`)
 - `ByteLengthParser` — fixed-size `length`-byte frames
@@ -55,8 +57,8 @@ Transform streams you compose onto the port with `.pipe()`:
 
 ### Testing without hardware
 
-`MockSerialPort` is a drop-in for `SerialPort` (same `ISerialPort` interface)
-that needs no native build:
+`MockSerialPort` is a drop-in for `SerialPort`, so
+you can test your serial logic with no device attached:
 
 ```ts
 import { MockSerialPort } from "tiny-serial";
@@ -65,75 +67,75 @@ const port = new MockSerialPort({ path: "/dev/mock", baudRate: 9600 });
 port.mockReply("PING", "PONG\n");
 await port.open();
 await port.write("PING"); // emits "PONG\n" on 'data'
-port.getWrittenData();     // Buffer of everything written
+port.getWrittenData(); // Buffer of everything written
 port.simulateFault("disconnect");
 ```
 
 ## Platform support
 
-| Platform            | Enumeration | Serial IO |
-| ------------------- | ----------- | --------- |
-| macOS (arm64, x64)  | ✅          | ✅        |
-| Linux (x64, arm64)  | ✅          | ✅        |
-| Windows (x64)       | ⏳ follow-up | ⏳ follow-up (loads; methods throw) |
+| Platform           | Enumeration | Serial IO                         |
+| ------------------ | ----------- | --------------------------------- |
+| macOS (arm64, x64) | ✅          | ✅                                |
+| Linux (x64, arm64) | ✅          | ✅                                |
+| Windows (x64)      | ⏳ planned  | ⏳ planned (loads; methods throw) |
 
-Windows cross-compiles and loads (the binary links against an import library
-generated from `node_api.def`), but native serial IO and port enumeration are
-not yet implemented.
+Windows cross-compiles and loads today (its import library is generated from
+`node_api.def`), but native serial IO and port enumeration aren't wired up yet —
+a great first contribution if you're on Windows.
 
-## Development
+## Contributing
 
-Requires [Zig 0.16.0](https://ziglang.org/download/) and Node ≥ 18.
+You'll need [Zig 0.16.0](https://ziglang.org/download/) and Node ≥ 18.
 
 ```sh
 npm install
-npm run build:native      # build the addon for the host -> prebuilds/
-npm run build:prebuilds    # cross-compile every target
+npm run build:native      # build the addon for your host -> prebuilds/
+npm run build:prebuilds   # cross-compile every target
 ```
 
-Releases are cut with `npm version` and published by CI — see
-[RELEASING.md](RELEASING.md).
+Releases go out via `npm version` + a git tag — see [RELEASING.md](RELEASING.md).
+Architecture, decisions, and conventions live in [CLAUDE.md](CLAUDE.md).
 
-### Testing
+### Tests
 
-Tests run on the [Bun](https://bun.sh) test runner (Bun executes the TypeScript
-directly — no compile step). There are three suites:
+Tests run on the [Bun](https://bun.sh) runner (it executes the TypeScript
+directly — no compile step), in three suites:
 
 ```sh
-npm test               # unit: mock + parsers, pure JS, no hardware
-npm run test:integration   # native addon over a socat PTY pair (needs socat + a host build)
-npm run test:hardware      # hardware-in-the-loop against a real device (opt-in, see below)
-npm run typecheck:test     # type-check the test sources
+npm test                 # unit: mock + parsers, pure JS, no hardware
+npm run test:integration # native addon over a socat PTY pair (needs socat + a host build)
+npm run test:hardware    # against a real device (opt-in, see below)
+npm run typecheck:test   # type-check the test sources
 ```
 
-- **Unit** (`src/**/*.test.ts`) — the mock and parsers, fully hermetic.
+- **Unit** (`src/**/*.test.ts`) — mock and parsers
 - **Integration** (`test/integration/`) — drives the real native binding through a
-  virtual serial pair created with `socat`; also asserts the line config
-  (dataBits/parity/stopBits) reaches the device via `stty`. Run `npm run build:native`
-  first. Skips automatically if `socat` or a prebuilt binary is missing.
-- **Hardware** (`test/hardware/`) — a separate opt-in suite that talks to a real
-  device flashed with the firmware in [`arduino/test-device/`](arduino/test-device/).
-  It only runs when you point it at a port:
+  virtual serial pair made with `socat`, and checks the line config
+  (dataBits/parity/stopBits) reaches the device via `stty`. Run
+  `npm run build:native` first; skips automatically if `socat` or a binary is
+  missing.
+- **Hardware** (`test/hardware/`) — an opt-in suite that talks to a real device
+  flashed with the firmware in [`arduino/test-device/`](arduino/test-device/).
+  Point it at a port to run it:
 
   ```sh
   SERIAL_TEST_PORT=/dev/cu.usbmodem1101 npm run test:hardware
-  SERIAL_TEST_PORT=/dev/ttyUSB0 SERIAL_TEST_BAUD=9600 npm run test:hardware
   ```
 
-  Without `SERIAL_TEST_PORT` set, the suite skips — so it never runs in CI or by
-  accident. It exercises the firmware protocol (PING→PONG, ID, ECHO, LINES, BINARY)
-  through the public `SerialPort` API.
+  With `SERIAL_TEST_PORT` unset it skips, so it never runs in CI or by accident.
+  It exercises the firmware protocol (PING→PONG, ID, ECHO, LINES, BINARY) through
+  the public `SerialPort` API.
 
-### How it fits together
+### Overview
 
-- `src/napi/*.zig` — native addon. `root.zig` registers the module;
-  `serial_port_posix.zig` implements the `NativeSerialPort` class (background
-  read thread → threadsafe function; async-work Promises for write/drain);
-  `enumerate.zig` lists ports by scanning `/dev`.
-- `src/*.ts` — the JS-facing layer: `SerialPort` (a `Readable`), `MockSerialPort`,
+- `src/napi/*.zig` — the native addon. `root.zig` registers the module;
+  `serial_port_posix.zig` implements `NativeSerialPort` (background read thread →
+  threadsafe function; async-work Promises for write/drain); `enumerate.zig`
+  lists ports by scanning `/dev`.
+- `src/*.ts` — the JS layer: `SerialPort` (a `Readable`), `MockSerialPort`,
   parsers, and option validation.
 - `index.js` — loads the right prebuilt `.node` via `node-gyp-build`.
-- Native config uses [ZigEmbeddedGroup/serial](https://github.com/ZigEmbeddedGroup/serial);
+- Line config uses [ZigEmbeddedGroup/serial](https://github.com/ZigEmbeddedGroup/serial);
   N-API headers come from [node-api-headers](https://github.com/nodejs/node-api-headers).
 
 ## License

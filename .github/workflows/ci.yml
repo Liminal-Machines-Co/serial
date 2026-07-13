@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 20
       - uses: oven-sh/setup-bun@v2
-      - uses: mlugg/setup-zig@v1
+      - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
       - run: npm ci
@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: mlugg/setup-zig@v1
+      - uses: mlugg/setup-zig@v2
         with:
           version: 0.16.0
       - run: npm run build:prebuilds
