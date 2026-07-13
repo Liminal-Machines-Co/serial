@@ -26,6 +26,7 @@
 	},
 	"homepage": "https://github.com/max-hans/tiny-serial#readme",
 	"scripts": {
+		"format:dryrun": "bunx --bun @biomejs/biome format",
 		"format": "bunx --bun @biomejs/biome format --write",
 		"lint": "bunx --bun @biomejs/biome check",
 		"lint:fix": "bunx --bun @biomejs/biome check --write",
