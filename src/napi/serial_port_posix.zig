@@ -1,7 +1,7 @@
 //! Native `NativeSerialPort` class backing src/SerialPort.ts.
 //!
 //! Contract (see src/types.ts INativeSerialPort):
-//!   open(path, baudRate, cb(err, data: Buffer))  - start background reads
+//!   open(path, config, cb(err, data: Buffer))  - start background reads
 //!   write(data: Buffer): Promise<void>
 //!   drain(): Promise<void>
 //!   close(): void
@@ -12,6 +12,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 const c = @import("c");
+const napi = @import("napi.zig");
 const serial = @import("serial");
 
 const alloc = std.heap.c_allocator;
@@ -58,48 +59,23 @@ const Work = struct {
 // ---------------------------------------------------------------------------
 
 pub fn defineClass(env: c.napi_env) c.napi_value {
-    const props = [_]c.napi_property_descriptor{
-        method("open", jsOpen),
-        method("write", jsWrite),
-        method("drain", jsDrain),
-        method("close", jsClose),
-    };
-    var class: c.napi_value = undefined;
-    _ = c.napi_define_class(
-        env,
-        "NativeSerialPort",
-        c.NAPI_AUTO_LENGTH,
-        construct,
-        null,
-        props.len,
-        &props,
-        &class,
-    );
-    return class;
-}
-
-fn method(comptime name: [:0]const u8, cb: c.napi_callback) c.napi_property_descriptor {
-    return .{
-        .utf8name = name.ptr,
-        .name = null,
-        .method = cb,
-        .getter = null,
-        .setter = null,
-        .value = null,
-        .attributes = c.napi_default,
-        .data = null,
-    };
+    return napi.defineClass(env, "NativeSerialPort", construct, &.{
+        .{ .name = "open", .cb = jsOpen },
+        .{ .name = "write", .cb = jsWrite },
+        .{ .name = "drain", .cb = jsDrain },
+        .{ .name = "close", .cb = jsClose },
+    });
 }
 
 fn construct(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
-    const this = cbThis(env, info, 0, null) catch return getUndefined(env);
+    const cb = napi.cbInfo(env, info, 0) catch return napi.getUndefined(env);
     const port = alloc.create(Port) catch {
-        _ = c.napi_throw_error(env, null, "out of memory");
-        return getUndefined(env);
+        napi.throwError(env, "out of memory");
+        return napi.getUndefined(env);
     };
     port.* = .{};
-    _ = c.napi_wrap(env, this, port, finalize, null, null);
-    return this;
+    napi.wrap(env, cb.this, port, finalize);
+    return cb.this;
 }
 
 fn finalize(_: c.napi_env, data: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
@@ -109,49 +85,86 @@ fn finalize(_: c.napi_env, data: ?*anyopaque, _: ?*anyopaque) callconv(.c) void 
 }
 
 // ---------------------------------------------------------------------------
-// open(path, baudRate, cb)
+// open(path, config, cb)
 // ---------------------------------------------------------------------------
 
 fn jsOpen(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
-    var argv: [3]c.napi_value = undefined;
-    const this = cbThis(env, info, 3, &argv) catch return getUndefined(env);
-    const port = unwrap(env, this) orelse return getUndefined(env);
+    const cb = napi.cbInfo(env, info, 3) catch return napi.getUndefined(env);
+    const argv = cb.argv;
+    const port = napi.unwrap(env, cb.this, Port) orelse return napi.getUndefined(env);
 
     if (port.is_open) {
-        _ = c.napi_throw_error(env, null, "Port is already open");
-        return getUndefined(env);
+        napi.throwError(env, "Port is already open");
+        return napi.getUndefined(env);
     }
 
     // path
     var path_buf: [std.fs.max_path_bytes]u8 = undefined;
     var path_len: usize = 0;
     if (c.napi_get_value_string_utf8(env, argv[0], &path_buf, path_buf.len, &path_len) != c.napi_ok) {
-        _ = c.napi_throw_error(env, null, "invalid path");
-        return getUndefined(env);
+        napi.throwError(env, "invalid path");
+        return napi.getUndefined(env);
     }
     path_buf[path_len] = 0;
     const path_z: [*:0]const u8 = @ptrCast(&path_buf);
 
-    // baudRate
-    var baud: u32 = 0;
-    _ = c.napi_get_value_uint32(env, argv[1], &baud);
+    // config object (argv[1])
+    const config_obj = argv[1];
+    const baud: u32 = napi.getNamedU32(env, config_obj, "baudRate") orelse 0;
 
     // open device
     const oflag = std.c.O{ .ACCMODE = .RDWR, .NOCTTY = true };
     const fd = std.c.open(path_z, oflag, @as(std.c.mode_t, 0));
     if (fd < 0) {
-        _ = c.napi_throw_error(env, null, "failed to open serial port");
-        return getUndefined(env);
+        napi.throwError(env, "failed to open serial port");
+        return napi.getUndefined(env);
     }
     errdefer _ = close(fd);
 
     // configure line settings unless baudRate == 0 (PTY/skip sentinel)
     if (baud != 0) {
+        const word_size: serial.WordSize = switch (napi.getNamedU32(env, config_obj, "dataBits") orelse 8) {
+            5 => .five,
+            6 => .six,
+            7 => .seven,
+            else => .eight,
+        };
+
+        const stop_bits: serial.StopBits = if ((napi.getNamedF64(env, config_obj, "stopBits") orelse 1) == 2)
+            .two
+        else
+            .one;
+
+        var parity_buf: [16]u8 = undefined;
+        const parity: serial.Parity = if (napi.getNamedStringUtf8(env, config_obj, "parity", &parity_buf)) |p| blk: {
+            if (std.mem.eql(u8, p, "odd")) break :blk .odd;
+            if (std.mem.eql(u8, p, "even")) break :blk .even;
+            if (std.mem.eql(u8, p, "mark")) break :blk .mark;
+            if (std.mem.eql(u8, p, "space")) break :blk .space;
+            break :blk .none;
+        } else .none;
+
+        const rtscts = napi.getNamedBool(env, config_obj, "rtscts") orelse false;
+        const xon = napi.getNamedBool(env, config_obj, "xon") orelse false;
+        const xoff = napi.getNamedBool(env, config_obj, "xoff") orelse false;
+        const handshake: serial.Handshake = if (rtscts)
+            .hardware
+        else if (xon or xoff)
+            .software
+        else
+            .none;
+
         const file = std.Io.File{ .handle = fd, .flags = .{ .nonblocking = false } };
-        serial.configureSerialPort(file, .{ .baud_rate = baud }) catch {
+        serial.configureSerialPort(file, .{
+            .baud_rate = baud,
+            .word_size = word_size,
+            .stop_bits = stop_bits,
+            .parity = parity,
+            .handshake = handshake,
+        }) catch {
             _ = close(fd);
-            _ = c.napi_throw_error(env, null, "failed to configure serial port");
-            return getUndefined(env);
+            napi.throwError(env, "failed to configure serial port");
+            return napi.getUndefined(env);
         };
     }
 
@@ -159,13 +172,12 @@ fn jsOpen(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value
     var wake: [2]std.c.fd_t = undefined;
     if (pipe(&wake) != 0) {
         _ = close(fd);
-        _ = c.napi_throw_error(env, null, "failed to create wake pipe");
-        return getUndefined(env);
+        napi.throwError(env, "failed to create wake pipe");
+        return napi.getUndefined(env);
     }
 
     // threadsafe function wrapping the JS callback
-    var res_name: c.napi_value = undefined;
-    _ = c.napi_create_string_utf8(env, "tinySerialRead", c.NAPI_AUTO_LENGTH, &res_name);
+    const res_name = napi.createStringUtf8(env, "tinySerialRead");
     var tsfn: c.napi_threadsafe_function = null;
     if (c.napi_create_threadsafe_function(
         env,
@@ -183,8 +195,8 @@ fn jsOpen(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value
         _ = close(fd);
         _ = close(wake[0]);
         _ = close(wake[1]);
-        _ = c.napi_throw_error(env, null, "failed to create threadsafe function");
-        return getUndefined(env);
+        napi.throwError(env, "failed to create threadsafe function");
+        return napi.getUndefined(env);
     }
 
     port.fd = fd;
@@ -200,11 +212,11 @@ fn jsOpen(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value
         _ = close(wake[0]);
         _ = close(wake[1]);
         port.* = .{};
-        _ = c.napi_throw_error(env, null, "failed to spawn read thread");
-        return getUndefined(env);
+        napi.throwError(env, "failed to spawn read thread");
+        return napi.getUndefined(env);
     };
 
-    return getUndefined(env);
+    return napi.getUndefined(env);
 }
 
 fn readLoop(port: *Port) void {
@@ -250,16 +262,10 @@ fn callJs(env: c.napi_env, js_cb: c.napi_value, _: ?*anyopaque, data: ?*anyopaqu
     // env is null when the environment is tearing down; skip the call.
     if (env == null or js_cb == null) return;
 
-    var buffer: c.napi_value = undefined;
-    if (c.napi_create_buffer_copy(env, chunk.bytes.len, chunk.bytes.ptr, null, &buffer) != c.napi_ok) return;
+    const buffer = napi.createBufferCopy(env, chunk.bytes) orelse return;
 
-    var null_val: c.napi_value = undefined;
-    _ = c.napi_get_null(env, &null_val);
-    var undef: c.napi_value = undefined;
-    _ = c.napi_get_undefined(env, &undef);
-
-    var args = [_]c.napi_value{ null_val, buffer };
-    _ = c.napi_call_function(env, undef, js_cb, args.len, &args, null);
+    var args = [_]c.napi_value{ napi.getNull(env), buffer };
+    _ = c.napi_call_function(env, napi.getUndefined(env), js_cb, args.len, &args, null);
 }
 
 // ---------------------------------------------------------------------------
@@ -267,17 +273,17 @@ fn callJs(env: c.napi_env, js_cb: c.napi_value, _: ?*anyopaque, data: ?*anyopaqu
 // ---------------------------------------------------------------------------
 
 fn jsWrite(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
-    var argv: [1]c.napi_value = undefined;
-    const this = cbThis(env, info, 1, &argv) catch return getUndefined(env);
-    const port = unwrap(env, this) orelse return getUndefined(env);
-    if (!port.is_open) return rejectNow(env, "Port is not open");
+    const cb = napi.cbInfo(env, info, 1) catch return napi.getUndefined(env);
+    const argv = cb.argv;
+    const port = napi.unwrap(env, cb.this, Port) orelse return napi.getUndefined(env);
+    if (!port.is_open) return napi.rejectNow(env, "Port is not open");
 
     var data_ptr: ?*anyopaque = null;
     var data_len: usize = 0;
     if (c.napi_get_buffer_info(env, argv[0], &data_ptr, &data_len) != c.napi_ok)
-        return rejectNow(env, "write expects a Buffer");
+        return napi.rejectNow(env, "write expects a Buffer");
 
-    const copy = alloc.alloc(u8, data_len) catch return rejectNow(env, "out of memory");
+    const copy = alloc.alloc(u8, data_len) catch return napi.rejectNow(env, "out of memory");
     if (data_len > 0) {
         const src: [*]const u8 = @ptrCast(data_ptr.?);
         @memcpy(copy, src[0..data_len]);
@@ -286,29 +292,26 @@ fn jsWrite(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_valu
 }
 
 fn jsDrain(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
-    const this = cbThis(env, info, 0, null) catch return getUndefined(env);
-    const port = unwrap(env, this) orelse return getUndefined(env);
-    if (!port.is_open) return rejectNow(env, "Port is not open");
-    const empty = alloc.alloc(u8, 0) catch return rejectNow(env, "out of memory");
+    const cb = napi.cbInfo(env, info, 0) catch return napi.getUndefined(env);
+    const port = napi.unwrap(env, cb.this, Port) orelse return napi.getUndefined(env);
+    if (!port.is_open) return napi.rejectNow(env, "Port is not open");
+    const empty = alloc.alloc(u8, 0) catch return napi.rejectNow(env, "out of memory");
     return queueWork(env, port, .drain, empty);
 }
 
 fn queueWork(env: c.napi_env, port: *Port, kind: WorkKind, data: []u8) c.napi_value {
-    var deferred: c.napi_deferred = undefined;
-    var promise: c.napi_value = undefined;
-    _ = c.napi_create_promise(env, &deferred, &promise);
+    const p = napi.createPromise(env);
 
     const w = alloc.create(Work) catch {
         alloc.free(data);
-        return promise; // promise leaks unresolved on OOM; acceptable edge case
+        return p.promise; // promise leaks unresolved on OOM; acceptable edge case
     };
-    w.* = .{ .kind = kind, .fd = port.fd, .data = data, .deferred = deferred };
+    w.* = .{ .kind = kind, .fd = port.fd, .data = data, .deferred = p.deferred };
 
-    var res_name: c.napi_value = undefined;
-    _ = c.napi_create_string_utf8(env, "tinySerialWork", c.NAPI_AUTO_LENGTH, &res_name);
+    const res_name = napi.createStringUtf8(env, "tinySerialWork");
     _ = c.napi_create_async_work(env, null, res_name, workExecute, workComplete, w, &w.work);
     _ = c.napi_queue_async_work(env, w.work);
-    return promise;
+    return p.promise;
 }
 
 fn workExecute(_: c.napi_env, data: ?*anyopaque) callconv(.c) void {
@@ -343,16 +346,10 @@ fn workComplete(env: c.napi_env, status: c.napi_status, data: ?*anyopaque) callc
     }
 
     if (status == c.napi_ok and w.ok) {
-        var undef: c.napi_value = undefined;
-        _ = c.napi_get_undefined(env, &undef);
-        _ = c.napi_resolve_deferred(env, w.deferred, undef);
+        napi.resolve(env, w.deferred, napi.getUndefined(env));
     } else {
-        var msg: c.napi_value = undefined;
         const text = if (w.kind == .drain) "drain failed" else "write failed";
-        _ = c.napi_create_string_utf8(env, text, c.NAPI_AUTO_LENGTH, &msg);
-        var err: c.napi_value = undefined;
-        _ = c.napi_create_error(env, null, msg, &err);
-        _ = c.napi_reject_deferred(env, w.deferred, err);
+        napi.reject(env, w.deferred, napi.createError(env, text));
     }
 }
 
@@ -361,10 +358,10 @@ fn workComplete(env: c.napi_env, status: c.napi_status, data: ?*anyopaque) callc
 // ---------------------------------------------------------------------------
 
 fn jsClose(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_value {
-    const this = cbThis(env, info, 0, null) catch return getUndefined(env);
-    const port = unwrap(env, this) orelse return getUndefined(env);
+    const cb = napi.cbInfo(env, info, 0) catch return napi.getUndefined(env);
+    const port = napi.unwrap(env, cb.this, Port) orelse return napi.getUndefined(env);
     shutdown(port);
-    return getUndefined(env);
+    return napi.getUndefined(env);
 }
 
 /// Idempotent teardown: stop the read thread, release the TSFN, close fds.
@@ -398,45 +395,4 @@ fn shutdown(port: *Port) void {
         _ = close(port.wake_w);
         port.wake_w = -1;
     }
-}
-
-// ---------------------------------------------------------------------------
-// helpers
-// ---------------------------------------------------------------------------
-
-fn getUndefined(env: c.napi_env) c.napi_value {
-    var undef: c.napi_value = undefined;
-    _ = c.napi_get_undefined(env, &undef);
-    return undef;
-}
-
-/// Reads callback info, returning `this`. `argc` is the expected arg count;
-/// `argv` receives the arguments (pass null when argc == 0).
-fn cbThis(env: c.napi_env, info: c.napi_callback_info, comptime argc: usize, argv: ?*[argc]c.napi_value) !c.napi_value {
-    var n: usize = argc;
-    var this: c.napi_value = undefined;
-    const argv_ptr: [*c]c.napi_value = if (argc == 0) null else @ptrCast(argv.?);
-    if (c.napi_get_cb_info(env, info, &n, argv_ptr, &this, null) != c.napi_ok) {
-        _ = c.napi_throw_error(env, null, "failed to read arguments");
-        return error.CbInfo;
-    }
-    return this;
-}
-
-fn unwrap(env: c.napi_env, this: c.napi_value) ?*Port {
-    var data: ?*anyopaque = null;
-    if (c.napi_unwrap(env, this, &data) != c.napi_ok) return null;
-    return @ptrCast(@alignCast(data orelse return null));
-}
-
-fn rejectNow(env: c.napi_env, msg: [:0]const u8) c.napi_value {
-    var deferred: c.napi_deferred = undefined;
-    var promise: c.napi_value = undefined;
-    _ = c.napi_create_promise(env, &deferred, &promise);
-    var text: c.napi_value = undefined;
-    _ = c.napi_create_string_utf8(env, msg.ptr, c.NAPI_AUTO_LENGTH, &text);
-    var err: c.napi_value = undefined;
-    _ = c.napi_create_error(env, null, text, &err);
-    _ = c.napi_reject_deferred(env, deferred, err);
-    return promise;
 }

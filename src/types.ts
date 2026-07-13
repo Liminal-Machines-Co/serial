@@ -27,10 +27,20 @@ export interface PortInfo {
 
 export type PinName = "CTS" | "DTR" | "RTS" | "DCD" | "DSR";
 
+export interface NativeOpenOptions {
+	baudRate: number;
+	dataBits?: 5 | 6 | 7 | 8;
+	stopBits?: 1 | 1.5 | 2;
+	parity?: "none" | "odd" | "even" | "mark" | "space";
+	rtscts?: boolean;
+	xon?: boolean;
+	xoff?: boolean;
+}
+
 export interface INativeSerialPort {
 	open(
 		path: string,
-		baudRate: number,
+		config: NativeOpenOptions,
 		cb: (err: Error | null, data: Buffer) => void,
 	): void;
 	write(data: Buffer): Promise<void>;

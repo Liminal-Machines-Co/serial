@@ -1,5 +1,6 @@
 const std = @import("std");
 const c = @import("c");
+const napi = @import("napi.zig");
 const enumerate = @import("enumerate.zig");
 const serial_port = @import("serial_port.zig");
 
@@ -33,13 +34,8 @@ fn listPorts(env: c.napi_env, info: c.napi_callback_info) callconv(.c) c.napi_va
         var obj: c.napi_value = undefined;
         _ = c.napi_create_object(env, &obj);
 
-        var path_val: c.napi_value = undefined;
-        _ = c.napi_create_string_utf8(env, entry.path.ptr, entry.path.len, &path_val);
-        _ = c.napi_set_named_property(env, obj, "path", path_val);
-
-        var type_val: c.napi_value = undefined;
-        _ = c.napi_create_string_utf8(env, entry.port_type.ptr, entry.port_type.len, &type_val);
-        _ = c.napi_set_named_property(env, obj, "portType", type_val);
+        _ = c.napi_set_named_property(env, obj, "path", napi.createStringUtf8(env, entry.path));
+        _ = c.napi_set_named_property(env, obj, "portType", napi.createStringUtf8(env, entry.port_type));
 
         _ = c.napi_set_element(env, arr, @intCast(i), obj);
     }

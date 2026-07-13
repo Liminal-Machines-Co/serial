@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import { once } from "node:events";
-import { test } from "node:test";
 import { ReadlineParser } from "../parsers/ReadlineParser.js";
 import { MockSerialPort } from "./MockSerialPort.js";
 
@@ -12,17 +11,17 @@ const collect = (stream: NodeJS.ReadableStream): Buffer[] => {
 
 test("open/close toggle isOpen and emit events", async () => {
 	const port = new MockSerialPort({ path: "/dev/mock", baudRate: 9600 });
-	assert.equal(port.isOpen, false);
+	expect(port.isOpen).toBe(false);
 
 	const opened = once(port, "open");
 	await port.open();
 	await opened;
-	assert.equal(port.isOpen, true);
+	expect(port.isOpen).toBe(true);
 
 	const closed = once(port, "close");
 	await port.close();
 	await closed;
-	assert.equal(port.isOpen, false);
+	expect(port.isOpen).toBe(false);
 });
 
 test("mockReply injects a response when the trigger is written", async () => {
@@ -33,7 +32,7 @@ test("mockReply injects a response when the trigger is written", async () => {
 	const chunks = collect(port);
 	await port.write("PING");
 	await once(port, "data");
-	assert.equal(Buffer.concat(chunks).toString(), "PONG\n");
+	expect(Buffer.concat(chunks).toString()).toBe("PONG\n");
 });
 
 test("getWrittenData captures everything written", async () => {
@@ -41,7 +40,7 @@ test("getWrittenData captures everything written", async () => {
 	await port.open();
 	await port.write("AT");
 	await port.write(Buffer.from("+GMR\r\n"));
-	assert.equal(port.getWrittenData().toString(), "AT+GMR\r\n");
+	expect(port.getWrittenData().toString()).toBe("AT+GMR\r\n");
 });
 
 test("timeout fault suppresses replies", async () => {
@@ -55,7 +54,7 @@ test("timeout fault suppresses replies", async () => {
 	});
 	await port.write("PING");
 	await new Promise((r) => setTimeout(r, 20));
-	assert.equal(got, false);
+	expect(got).toBe(false);
 });
 
 test("disconnect fault ends the stream and emits close", async () => {
@@ -66,7 +65,7 @@ test("disconnect fault ends the stream and emits close", async () => {
 	port.resume();
 	port.simulateFault("disconnect");
 	await Promise.all([closed, ended]);
-	assert.equal(port.isOpen, false);
+	expect(port.isOpen).toBe(false);
 });
 
 test("composes with ReadlineParser into framed lines", async () => {
@@ -80,7 +79,8 @@ test("composes with ReadlineParser into framed lines", async () => {
 
 	await port.write("GO");
 	await new Promise((r) => setTimeout(r, 20));
-	assert.deepEqual(lines, ["one", "two"]); // "thr" is buffered, no delimiter yet
+	// "thr" is buffered, no delimiter yet
+	expect(lines).toEqual(["one", "two"]);
 });
 
 test("pin changes emit pin-change events", async () => {
@@ -88,6 +88,6 @@ test("pin changes emit pin-change events", async () => {
 	const evt = once(port, "pin-change");
 	port.pins.setDTR(true);
 	const [payload] = await evt;
-	assert.deepEqual(payload, { pin: "DTR", value: true });
-	assert.equal(port.pins.getDTR(), true);
+	expect(payload).toEqual({ pin: "DTR", value: true });
+	expect(port.pins.getDTR()).toBe(true);
 });

@@ -3,6 +3,7 @@ import { Transform, type TransformOptions } from "node:stream";
 export abstract class BufferedTransform extends Transform {
 	protected _buffer: Buffer = Buffer.alloc(0);
 
+	// biome-ignore lint/complexity/noUselessConstructor: not necessary right now, but kept for later
 	constructor(options?: TransformOptions) {
 		super(options);
 	}

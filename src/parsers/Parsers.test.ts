@@ -1,6 +1,5 @@
-import assert from "node:assert/strict";
+import { expect, test } from "bun:test";
 import { Readable } from "node:stream";
-import { test } from "node:test";
 import { ByteLengthParser } from "./ByteLengthParser.js";
 import { InterByteTimeoutParser } from "./InterByteTimeoutParser.js";
 import { ReadlineParser } from "./ReadlineParser.js";
@@ -29,10 +28,7 @@ function run<T extends NodeJS.ReadWriteStream>(
 
 test("ReadlineParser splits on newline across chunk boundaries", async () => {
 	const out = await run(new ReadlineParser(), ["foo\nba", "r\nbaz\n"]);
-	assert.deepEqual(
-		out.map((b) => b.toString()),
-		["foo", "bar", "baz"],
-	);
+	expect(out.map((b) => b.toString())).toEqual(["foo", "bar", "baz"]);
 });
 
 test("ReadlineParser honours a custom delimiter and includeDelimiter", async () => {
@@ -40,18 +36,12 @@ test("ReadlineParser honours a custom delimiter and includeDelimiter", async () 
 		new ReadlineParser({ delimiter: "\r\n", includeDelimiter: true }),
 		["a\r\nb\r\n"],
 	);
-	assert.deepEqual(
-		out.map((b) => b.toString()),
-		["a\r\n", "b\r\n"],
-	);
+	expect(out.map((b) => b.toString())).toEqual(["a\r\n", "b\r\n"]);
 });
 
 test("ReadlineParser flushes a trailing partial line", async () => {
 	const out = await run(new ReadlineParser(), ["done\nleftover"]);
-	assert.deepEqual(
-		out.map((b) => b.toString()),
-		["done", "leftover"],
-	);
+	expect(out.map((b) => b.toString())).toEqual(["done", "leftover"]);
 });
 
 test("ByteLengthParser emits fixed-size frames and buffers remainder", async () => {
@@ -59,22 +49,17 @@ test("ByteLengthParser emits fixed-size frames and buffers remainder", async () 
 		Buffer.from([1, 2, 3]),
 		Buffer.from([4, 5]),
 	]);
-	assert.deepEqual(
-		out.map((b) => [...b]),
-		[[1, 2], [3, 4], [5]],
-	); // last [5] is the flushed remainder
+	// last [5] is the flushed remainder
+	expect(out.map((b) => [...b])).toEqual([[1, 2], [3, 4], [5]]);
 });
 
 test("ByteLengthParser rejects a length below 1", () => {
-	assert.throws(() => new ByteLengthParser({ length: 0 }), TypeError);
+	expect(() => new ByteLengthParser({ length: 0 })).toThrow(TypeError);
 });
 
 test("RegexParser splits on a pattern", async () => {
 	const out = await run(new RegexParser({ regex: /\s+/ }), ["a  b\tc"]);
-	assert.deepEqual(
-		out.map((b) => b.toString()),
-		["a", "b", "c"],
-	);
+	expect(out.map((b) => b.toString())).toEqual(["a", "b", "c"]);
 });
 
 test("InterByteTimeoutParser emits after the inter-byte gap", async () => {
@@ -84,6 +69,6 @@ test("InterByteTimeoutParser emits after the inter-byte gap", async () => {
 	parser.write(Buffer.from("hel"));
 	parser.write(Buffer.from("lo"));
 	await new Promise((r) => setTimeout(r, 30));
-	assert.equal(Buffer.concat(out).toString(), "hello");
+	expect(Buffer.concat(out).toString()).toBe("hello");
 	parser.end();
 });

@@ -29,6 +29,21 @@ await port.write("AT\r\n");
 const ports = await SerialPort.list(); // [{ path, portType }, ...]
 ```
 
+### CLI
+
+The package ships a small `tiny-serial` command for listing ports:
+
+```sh
+npx tiny-serial list          # table of available ports
+npx tiny-serial list --json   # machine-readable JSON
+```
+
+```
+PATH                             TYPE
+/dev/cu.usbserial-1420           cu
+/dev/cu.Bluetooth-Incoming-Port  cu
+```
+
 ### Parsers
 
 Transform streams you compose onto the port with `.pipe()`:
@@ -74,9 +89,40 @@ Requires [Zig 0.16.0](https://ziglang.org/download/) and Node ≥ 18.
 npm install
 npm run build:native      # build the addon for the host -> prebuilds/
 npm run build:prebuilds    # cross-compile every target
-npm test                   # mock + parser unit tests (no hardware)
-npm run test:native        # end-to-end over a socat PTY pair (needs socat)
 ```
+
+Releases are cut with `npm version` and published by CI — see
+[RELEASING.md](RELEASING.md).
+
+### Testing
+
+Tests run on the [Bun](https://bun.sh) test runner (Bun executes the TypeScript
+directly — no compile step). There are three suites:
+
+```sh
+npm test               # unit: mock + parsers, pure JS, no hardware
+npm run test:integration   # native addon over a socat PTY pair (needs socat + a host build)
+npm run test:hardware      # hardware-in-the-loop against a real device (opt-in, see below)
+npm run typecheck:test     # type-check the test sources
+```
+
+- **Unit** (`src/**/*.test.ts`) — the mock and parsers, fully hermetic.
+- **Integration** (`test/integration/`) — drives the real native binding through a
+  virtual serial pair created with `socat`; also asserts the line config
+  (dataBits/parity/stopBits) reaches the device via `stty`. Run `npm run build:native`
+  first. Skips automatically if `socat` or a prebuilt binary is missing.
+- **Hardware** (`test/hardware/`) — a separate opt-in suite that talks to a real
+  device flashed with the firmware in [`arduino/test-device/`](arduino/test-device/).
+  It only runs when you point it at a port:
+
+  ```sh
+  SERIAL_TEST_PORT=/dev/cu.usbmodem1101 npm run test:hardware
+  SERIAL_TEST_PORT=/dev/ttyUSB0 SERIAL_TEST_BAUD=9600 npm run test:hardware
+  ```
+
+  Without `SERIAL_TEST_PORT` set, the suite skips — so it never runs in CI or by
+  accident. It exercises the firmware protocol (PING→PONG, ID, ECHO, LINES, BINARY)
+  through the public `SerialPort` API.
 
 ### How it fits together
 
