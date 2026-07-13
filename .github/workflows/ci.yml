@@ -76,4 +76,4 @@ jobs:
           done
       - run: npm ci
       # prepack (clean + build:ts) runs automatically during publish.
-      - run: npm publish --access public
+      - run: npm publish --provenance --access public
