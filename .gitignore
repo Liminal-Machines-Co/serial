@@ -1,0 +1,7 @@
+node_modules/
+dist/
+prebuilds/
+.zig-cache/
+zig-out/
+zig-pkg/
+*.tsbuildinfo

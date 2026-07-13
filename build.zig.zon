@@ -1,0 +1,21 @@
+.{
+    .name = .tiny_serial,
+    .version = "0.1.0",
+    .fingerprint = 0x981b9e8bfd1cd42d,
+    .minimum_zig_version = "0.16.0",
+    .dependencies = .{
+        .node_api_headers = .{
+            .url = "git+https://github.com/nodejs/node-api-headers.git#8d0ef96a771d67f79b5436604d8c697ea70b618e",
+            .hash = "N-V-__8AAEiSAQDkVmC0ib1Fbbvu_nyIN7F7rPEsZyEY8dnQ",
+        },
+        .serial = .{
+            .url = "git+https://github.com/ZigEmbeddedGroup/serial.git#25b58d0ea62f7bfc33e6c147c1c02193a50c65fb",
+            .hash = "serial-0.0.1-PoeRzD66AACCQUHzsIssi6bOcEtnQFPebT6WLvno0I_p",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
