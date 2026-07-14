@@ -33,10 +33,10 @@ That single command:
 3. runs `postversion` — `git push --follow-tags`, which pushes the commit and
    the tag.
 
-Pushing the tag triggers the `publish` job in
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml), which:
+Pushing the tag triggers [`.github/workflows/release.yml`](.github/workflows/release.yml),
+which reuses CI's `test` + `prebuilds` jobs and then `publish`, which:
 
-- waits for the `test` and `prebuilds` jobs to pass;
+- waits for the reused `test` and `prebuilds` jobs to pass;
 - verifies the tag matches `package.json` and that all five prebuilds exist;
 - publishes `@liminal-machines-co/serial` to npm with provenance and public access.
 

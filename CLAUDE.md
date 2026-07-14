@@ -146,19 +146,27 @@ npm version patch|minor|major
 ```
 
 - `preversion` gate: `lint && typecheck && test` (unit).
-- `npm version` bumps `package.json`, commits, tags `vX.Y.Z`.
-- `postversion`: `git push --follow-tags`.
-- The tag triggers the `publish` CI job: it waits for `test` + `prebuilds`,
-  verifies the tag matches `package.json` and that all five prebuilds exist,
-  then `npm publish --provenance --access public`.
+- `npm version` bumps `package.json`, commits (message `chore(release): X.Y.Z`
+  via `.npmrc`), tags `vX.Y.Z`.
+- `postversion`: `git push --follow-tags`. The branch push is skipped by the
+  guard; the tag drives the release.
+- The tag triggers `release.yml`: it reuses `test` + `prebuilds`, verifies the
+  tag matches `package.json` and that all five prebuilds exist, then
+  `npm publish --provenance --access public`.
 
 CI is authenticated to npm via trusted publishing.
 
-## CI (`.github/workflows/ci.yml`)
+## CI
 
-- `test` — Node + Bun + Zig; typecheck, unit, integration (installs socat).
-- `prebuilds` — one runner cross-compiles all targets, uploads the artifact.
-- `publish` — tag-gated; downloads prebuilds, verifies, publishes.
+- `ci.yml` — on branches/PRs + `workflow_call`. Jobs:
+  - `test` — Node + Bun + Zig; typecheck, unit, integration (installs socat).
+  - `prebuilds` — one runner cross-compiles all targets, uploads the artifact.
+  - Every job carries a guard skipping the `chore(release):` commit's branch
+    push (arrives with the tag) so a release runs CI once, via the tag.
+- `release.yml` — tag-only (`v*`). Reuses `ci.yml` via `workflow_call`, then
+  `publish` downloads prebuilds, verifies tag/prebuilds, publishes.
+- `.npmrc` sets `message = "chore(release): %s"` so `npm version` marks the
+  release commit; the marker must match the guard's `startsWith`.
 
 ## Conventions
 
