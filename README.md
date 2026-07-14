@@ -1,18 +1,14 @@
 # @liminal-machines-co/serial
 
 A small, fast serial port library for Node.js with a **Zig**-backed native core.
-Zig cross-compiles every target from a single machine, and Node-API symbols
-resolve at load time — so prebuilt binaries for all platforms are built in one CI
-job and bundled into the package. Just install and go.
+Prebuilt native binaries for all platforms are bundled into the package, so you
+probably can just install and go without any build process after install.
 
 ## Install
 
 ```sh
 npm install @liminal-machines-co/serial
 ```
-
-`node-gyp-build` picks the right prebuilt binary from
-`prebuilds/<platform>-<arch>/serial.node` at load time.
 
 ## Usage
 
@@ -98,8 +94,7 @@ Architecture, decisions, and conventions live in [CLAUDE.md](CLAUDE.md).
 
 ### Tests
 
-Tests run on the [Bun](https://bun.sh) runner (it executes the TypeScript
-directly — no compile step), in three suites:
+Tests run on the [Bun](https://bun.sh) runner in three suites:
 
 ```sh
 npm test                 # unit: mock + parsers, pure JS, no hardware

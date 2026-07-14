@@ -58,25 +58,23 @@ arduino/test-device/    firmware fixture for hardware tests
    host with no per-platform toolchain. N-API symbols are undefined until load
    (`-fallow-shlib-undefined`), so the addon never links libnode.
 
-2. **Raw N-API translate-c, not zig-napi.** The zig-napi wrapper lacked
+2. **Raw N-API translate-c, not zig-napi.** The zig-napi wrapper lacks
    `napi_wrap`/`define_class`/threadsafe-functions/async-work/promises/buffers
    and discarded `this`. We `translateC` `node-api-headers` directly and keep
-   ergonomic helpers in `napi.zig`. This also drops a dependency (the project
-   favors a lean dependency tree).
+   ergonomic helpers in `napi.zig`. This also drops a dependency keeping the dependency tree
+   lean.
 
 3. **Threading model.** Reads run on a dedicated OS thread and reach the JS
    callback via a **threadsafe function**; a self-pipe unblocks the poll on
    close. `write`/`drain` use `napi_create_async_work` (libuv threadpool) and
-   resolve a Promise — this is the sanctioned N-API offload path, not a real
-   libuv dependency (nothing is linked/shipped).
+   resolve a Promise.
 
-4. **Config seam carries full line settings.** `NativeSerialPort.open(path,
+4. **Config carries full line settings.** `NativeSerialPort.open(path,
 config, cb)` where `config: NativeOpenOptions` = `{ baudRate, dataBits?,
 stopBits?, parity?, rtscts?, xon?, xoff? }`. `baudRate === 0` is a sentinel
    that skips `configureSerialPort` (for PTYs). Handshake maps to the serial
    lib's single field: `rtscts` → hardware, else `xon||xoff` → software, else
-   none. Do not narrow this back to baud-only — the earlier bug was the
-   interface promising config the implementation dropped.
+   none.
 
 5. **Windows is a scoped follow-up.** It cross-compiles and loads (its import
    library is generated from `node_api.def` via `zig dlltool`), but native
@@ -87,9 +85,9 @@ stopBits?, parity?, rtscts?, xon?, xoff? }`. `baudRate === 0` is a sentinel
    keeping cross-compilation clean. `serial`'s own iterators are not used (its
    Darwin iterator is broken on 0.16).
 
-7. **Mock is a standalone `ISerialPort`, not a native seam.** `MockSerialPort`
+7. **Mock is a standalone `ISerialPort`, not a native dependency.** `MockSerialPort`
    replaces `SerialPort` wholesale for tests; it does not ride the native
-   binding. There is no `_nativeImpl` injection param (removed as dead code).
+   binding.
 
 8. **Native binding loaded lazily, once.** `native.ts#getNative()` memoizes a
    single dynamic `import("../index.js")`, unwraps the CJS `.default`, and
@@ -154,8 +152,7 @@ npm version patch|minor|major
   verifies the tag matches `package.json` and that all five prebuilds exist,
   then `npm publish --provenance --access public`.
 
-One-time: `NPM_TOKEN` repo secret; the GitHub repo must be public and match the
-`repository` field (npm provenance requires both).
+CI is authenticated to npm via trusted publishing.
 
 ## CI (`.github/workflows/ci.yml`)
 
