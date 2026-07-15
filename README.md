@@ -1,3 +1,5 @@
+![cover](assets/cover.jpg)
+
 # @liminal-machines-co/serial
 
 A small, fast serial port library for Node.js with a **Zig**-backed native core.
